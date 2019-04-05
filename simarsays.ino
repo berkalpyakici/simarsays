@@ -9,12 +9,17 @@ const int redLedPin =  RED_LED;      // the number of the LED pin
 const int greenLedPin =  GREEN_LED;      // the number of the LED pin
 const int blueLedPin =  BLUE_LED;      // the number of the LED pin
 const int buzzer = 40;
+const int audioSensor = 23;
 
 int leftButtonState = 0;         // variable for reading the pushbutton status
 int rightButtonState = 0;         // variable for reading the pushbutton status
+int audioLevel = 0;
 
 int buzzDuration = 200;
 int buzzDelayMultiplier = 500;
+
+int curPlayer = 1;
+int curRound = 1;
 
 const float patterns[20][4] = {
     {0.57,  0.42,  0.66,  0.43},
@@ -56,6 +61,8 @@ void setup() {
   // Prompting selection for number of players
   int numPlayers = promptNumPlayer();
 
+  
+
   buzzPattern(2);
 }
 
@@ -69,6 +76,9 @@ void segmentDisplay(int sig1, int sig2, int sig3, int sig4) {
 }
 
 void toggleBuzz(){
+  /***
+   * 
+   */
   digitalWrite(buzzer, HIGH);
   delay(buzzDuration);
   digitalWrite(buzzer, LOW);
@@ -89,6 +99,22 @@ void writeLed(int LED, int STATE) {
    * Does LED stuff.
    */
   digitalWrite(LED, STATE);
+}
+
+int soundLevel() {
+  /***
+   * Listens the enviornment.
+   * > 1800 means a clap.
+   */
+  long sum = 0;
+  for(int i=0; i<32; i++)
+  {
+      sum += analogRead(audioSensor);
+  }
+
+  sum >>= 5;
+
+  return sum
 }
 
 int promptNumPlayer() {
@@ -124,4 +150,6 @@ int promptNumPlayer() {
 void loop() {
   // put your main code here, to run repeatedly: 
   
+  
+
 }
