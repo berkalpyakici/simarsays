@@ -16,7 +16,7 @@ int rightButtonState = 0;         // variable for reading the pushbutton status
 int audioLevel = 0;
 
 int buzzDuration = 200;
-int buzzDelayMultiplier = 500;
+int buzzDelayMultiplier = 1000;
 
 int curPlayer = 0;
 int curRound = 1;
@@ -56,7 +56,9 @@ void setup() {
   pinMode(rightButtonPin, INPUT_PULLUP);
   pinMode(redLedPin, OUTPUT);        
   pinMode(greenLedPin, OUTPUT);        
-  pinMode(blueLedPin, OUTPUT);        
+  pinMode(blueLedPin, OUTPUT);
+
+  Serial.begin(9600);
 
   // Writing __ 01 to Display
   segmentDisplay(0x12,0x12,0x00,0x01);
@@ -69,22 +71,6 @@ void setup() {
     players[i][0] = 0; // Score
     players[i][1] = 1; // Alive
   }
-
-  while(true) {
-
-    curPlayer = nextPlayer();
-
-    if(nextPlayer == 0) {
-      finishGame();
-      break;
-    }
-
-    segmentDisplay(curPlayer, 0x12, 0x00, players[curPlayer-1][0]);
-
-    delay(500);
-    buzzPattern(3);
-  }
-
 }
 
 int nextPlayer() {
@@ -98,29 +84,91 @@ int nextPlayer() {
 
     if(nextPlayerID > numPlayers) {
       nextPlayerID = 1;
-    }
-
-    if(players[nextPlayerID-1][1] == 1) {
-      return nextPlayerID;
+      curRound += 1;
     }
 
     if(nextPlayerID == curPlayer) {
       // We have a champion. Returns 0 so that the game knows that it has concluded.
       return 0;
     }
+
+    if(players[nextPlayerID-1][1] == 1) {
+      return nextPlayerID;
+    }
   }
   
 }
 
 void nextRound() {
+  /***
+   * Plays the next round for the current player.
+   */
+
+   int lenPatterns = int(curRound/10) + 1;
+   lenPatterns = 1;
+   int currentPattern[lenPatterns];
+
+   delay(2000);
+   
+   for (int i=0; i < lenPatterns; i++) {
+      currentPattern[i] = random(0, 20);
+      buzzPattern(currentPattern[i]);
+   }
+
+   int score = listenClaps(currentPattern[0]);
+
+   if(score == 0) {
+      players[curPlayer][1] = 0;
+   }
+
+   delay(2000);
+
+   
+}
+
+int listenClaps(int patternNum) {
+  while(true) {
+    if(soundLevel() > 1800) {
+      break;
+    }
+  }
+
+  float timeintervals[4] = {0, 0, 0, 0};
+
+  int curinterval = 0;
   
+  while(true) {
+    int timecounter = 0;
+    while(true) {
+      timecounter += 1;
+
+      if(soundLevel() > 1800) {
+        break;
+      }
+    }
+
+    timeintervals[curinterval] = timecounter+200;
+    Serial.println(timeintervals[curinterval]);
+    curinterval += 1;
+
+    if(curinterval >= 4) {
+      break;
+    }
+
+    while(soundLevel() > 300) { Serial.println("s"); delay(100); }
+  }
+
+  return 0;
 }
 
 void finishGame() {
   /***
    * We have a champion. Finish the freaking game.
    */
-   
+   segmentDisplay(8,8,8,8);
+   while(true) {
+    delay(10000);
+   }
 }
 
 void segmentDisplay(int sig1, int sig2, int sig3, int sig4) {
@@ -140,14 +188,26 @@ void toggleBuzz(){
   digitalWrite(buzzer, LOW);
 }
 
+void toggleLongBuzz(){
+  /***
+   * 
+   */
+  digitalWrite(buzzer, HIGH);
+  delay(buzzDuration * 6);
+  digitalWrite(buzzer, LOW);
+}
+
+
 void buzzPattern(int pattern) {
   /***
    * Plays the pattern with the index patern.
    */
   for(int i = 0; i < 4; i++ ) {
     toggleBuzz();
+    Serial.println(patterns[pattern][i] * buzzDelayMultiplier);
     delay(patterns[pattern][i] * buzzDelayMultiplier);
   }
+  toggleBuzz();
 }
 
 void writeLed(int LED, int STATE) {
@@ -205,7 +265,14 @@ int promptNumPlayer() {
 
 void loop() {
   // put your main code here, to run repeatedly: 
-  
-  
+  curPlayer = nextPlayer();
 
+  if(curPlayer == 0) {
+    finishGame();
+  } else {
+    segmentDisplay(curPlayer, 0x12, 0x00, players[curPlayer-1][0]);
+
+    delay(500);
+    nextRound();
+  }
 }
