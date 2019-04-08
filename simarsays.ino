@@ -18,8 +18,11 @@ int audioLevel = 0;
 int buzzDuration = 200;
 int buzzDelayMultiplier = 500;
 
-int curPlayer = 1;
+int curPlayer = 0;
 int curRound = 1;
+int numPlayers = 1;
+
+int players[9][2];
 
 const float patterns[20][4] = {
     {0.57,  0.42,  0.66,  0.43},
@@ -59,13 +62,66 @@ void setup() {
   segmentDisplay(0x12,0x12,0x00,0x01);
 
   // Prompting selection for number of players
-  int numPlayers = promptNumPlayer();
+  numPlayers = promptNumPlayer();
 
-  
+  // Setting score to 0 and in-game to 1
+  for (int i=0; i < numPlayers; i++) {
+    players[i][0] = 0; // Score
+    players[i][1] = 1; // Alive
+  }
 
-  buzzPattern(2);
+  while(true) {
+
+    curPlayer = nextPlayer();
+
+    if(nextPlayer == 0) {
+      finishGame();
+      break;
+    }
+
+    segmentDisplay(curPlayer, 0x12, 0x00, players[curPlayer-1][0]);
+
+    delay(500);
+    buzzPattern(3);
+  }
+
 }
 
+int nextPlayer() {
+  /***
+   * Returns the ID of the next player. If no other players are alive, then returns 0.
+   */
+  int nextPlayerID = curPlayer;
+
+  while(true) {
+    nextPlayerID += 1;
+
+    if(nextPlayerID > numPlayers) {
+      nextPlayerID = 1;
+    }
+
+    if(players[nextPlayerID-1][1] == 1) {
+      return nextPlayerID;
+    }
+
+    if(nextPlayerID == curPlayer) {
+      // We have a champion. Returns 0 so that the game knows that it has concluded.
+      return 0;
+    }
+  }
+  
+}
+
+void nextRound() {
+  
+}
+
+void finishGame() {
+  /***
+   * We have a champion. Finish the freaking game.
+   */
+   
+}
 
 void segmentDisplay(int sig1, int sig2, int sig3, int sig4) {
   /***
@@ -114,7 +170,7 @@ int soundLevel() {
 
   sum >>= 5;
 
-  return sum
+  return sum;
 }
 
 int promptNumPlayer() {
