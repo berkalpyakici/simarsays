@@ -118,7 +118,11 @@ void nextRound() {
    int score = listenClaps(currentPattern[0]);
 
    if(score == 0) {
-      players[curPlayer][1] = 0;
+      players[curPlayer-1][1] = 0;
+   } else {
+      players[curPlayer-1][0] += score;
+
+      segmentDisplay(curPlayer,0x12,(players[curPlayer-1][0] / 10) % 10,players[curPlayer-1][0] % 10);
    }
 
    delay(2000);
@@ -127,38 +131,61 @@ void nextRound() {
 }
 
 int listenClaps(int patternNum) {
+
+  int curinterval = 0;
+  int prevSoundLevel;
+  int curSoundLevel;
+  int delta;
+  
   while(true) {
-    if(soundLevel() > 1800) {
+    curSoundLevel = soundLevel();
+    if(curSoundLevel > 1800) {
+      prevSoundLevel = curSoundLevel;
       break;
     }
   }
 
-  float timeintervals[4] = {0, 0, 0, 0};
+  delay(200);
 
-  int curinterval = 0;
+  float timeintervals[4] = {0, 0, 0, 0};
   
   while(true) {
     int timecounter = 0;
     while(true) {
       timecounter += 1;
 
-      if(soundLevel() > 1800) {
+      curSoundLevel = soundLevel();
+      delta = abs(curSoundLevel - prevSoundLevel);
+      if(delta < 200) {
+        prevSoundLevel = curSoundLevel;
         break;
       }
     }
 
-    timeintervals[curinterval] = timecounter+200;
-    Serial.println(timeintervals[curinterval]);
+    timeintervals[curinterval] = timecounter;
     curinterval += 1;
 
     if(curinterval >= 4) {
       break;
     }
 
-    while(soundLevel() > 300) { Serial.println("s"); delay(100); }
+    delay(200);
   }
 
-  return 0;
+  int scorecounter;
+
+  for(int i=0; i<4; i++)
+  {
+      scorecounter += abs(timeintervals[i] - patterns[patternNum][i]);
+  }
+
+  int score = 10000/scorecounter;
+
+  if(score >= 10) {
+    score = 10;
+  }
+
+  return score;
 }
 
 void finishGame() {
@@ -204,7 +231,6 @@ void buzzPattern(int pattern) {
    */
   for(int i = 0; i < 4; i++ ) {
     toggleBuzz();
-    Serial.println(patterns[pattern][i] * buzzDelayMultiplier);
     delay(patterns[pattern][i] * buzzDelayMultiplier);
   }
   toggleBuzz();
@@ -270,7 +296,10 @@ void loop() {
   if(curPlayer == 0) {
     finishGame();
   } else {
-    segmentDisplay(curPlayer, 0x12, 0x00, players[curPlayer-1][0]);
+    segmentDisplay(curPlayer, 0x12, (players[curPlayer-1][0] / 10) % 10, players[curPlayer-1][0] % 10);
+    Serial.println("Player "); Serial.println(curPlayer);
+    Serial.println("Score: "); Serial.println(players[curPlayer-1][0]);
+    //Serial.println("Display: "); Serial.println((players[curPlayer-1][0] / 10) % 10); Serial.println(players[curPlayer-1][0] % 10);
 
     delay(500);
     nextRound();
